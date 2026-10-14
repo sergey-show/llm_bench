@@ -1,0 +1,11 @@
+id,question,reference_answer,gold_score,tags,weight,rubric
+1,What is 2+2?,4,5.0,math;easy,1.0,Exact numeric answer
+2,Capital of France?,Paris,5.0,geo;easy,1.0,City name
+3,Who wrote Hamlet?,William Shakespeare,4.5,lit;medium,1.0,Author name
+4,Explain photosynthesis briefly.,Plants convert light energy into chemical energy using chlorophyll.,4.0,science;medium,1.2,Key idea: light to chemical energy
+5,What is the boiling point of water at sea level in C?,100,5.0,science;easy,1.0,Exact number
+6,Name a programming language created by Guido van Rossum.,Python,5.0,cs;easy,1.0,Python
+7,What causes seasons on Earth?,Tilt of Earth's axis relative to its orbit around the Sun.,4.0,science;medium,1.0,Axial tilt
+8,Translate 'hello' to Spanish.,hola,5.0,lang;easy,1.0,Exact or close
+9,Is 15 a prime number?,No,5.0,math;easy,1.0,Yes/No with correctness
+10,Summarize what an API is.,An interface that lets software systems communicate via defined requests and responses.,3.5,cs;medium,1.0,Interface between systems

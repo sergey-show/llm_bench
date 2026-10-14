@@ -1,0 +1,38 @@
+services:
+  api:
+    build: .
+    command: ["llm-bench", "serve", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    environment:
+      LLM_BENCH_DATA_DIR: /data
+      LLM_BENCH_SECRET_KEY: ${LLM_BENCH_SECRET_KEY:-change-me-in-prod}
+      LLM_BENCH_API_TOKEN: ${LLM_BENCH_API_TOKEN:-}
+      LLM_BENCH_DEFAULT_CONCURRENCY: ${LLM_BENCH_DEFAULT_CONCURRENCY:-8}
+      LLM_BENCH_MAX_PARALLEL_JOBS: ${LLM_BENCH_MAX_PARALLEL_JOBS:-2}
+    volumes:
+      - bench_data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  ui:
+    build: .
+    command: ["streamlit", "run", "llm_bench/ui_app.py", "--server.address", "0.0.0.0", "--server.port", "8501"]
+    ports:
+      - "8501:8501"
+    environment:
+      LLM_BENCH_DATA_DIR: /data
+      LLM_BENCH_API_URL: http://api:8000
+      LLM_BENCH_API_TOKEN: ${LLM_BENCH_API_TOKEN:-}
+      LLM_BENCH_SECRET_KEY: ${LLM_BENCH_SECRET_KEY:-change-me-in-prod}
+    volumes:
+      - bench_data:/data
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  bench_data:

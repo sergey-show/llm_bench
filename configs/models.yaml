@@ -1,0 +1,32 @@
+# Model catalog for LLM Bench UI / runner.
+# API keys: ${ENV_VAR} expanded from process env / .env
+#
+# judges  — LLM-as-judge models (shown in Run → Judge)
+# providers — candidate models under test
+# default_judge — optional OpenAI model id from judges section
+kind: ModelCatalog
+default_judge: nvidia/nemotron-3-ultra-550b-a55b:free
+judges:
+  - name: openrouter
+    base_url: https://openrouter.ai/api/v1
+    api_key: ${OPENROUTER_API_KEY}
+    temperature: 0.0
+    max_tokens: 1024
+    concurrency: 4
+    models:
+      - id: nvidia/nemotron-3-ultra-550b-a55b:free
+        name: nemotron-3-ultra-free
+providers:
+  - name: openrouter
+    base_url: https://openrouter.ai/api/v1
+    api_key: ${OPENROUTER_API_KEY}
+    temperature: 0.0
+    max_tokens: 1024
+    concurrency: 4
+    models:
+      - id: nvidia/nemotron-3-ultra-550b-a55b:free
+        name: nemotron-3-ultra-free
+      - id: liquid/lfm-2.5-2.6b:free
+        name: lfm-2.5-2.6b-free
+      - id: google/gemma-4-26b-a4b-it:free
+        name: gemma-4-26b-a4b-it:free
