@@ -49,11 +49,21 @@ async def chat_complete(
         max_tokens=model.max_tokens,
     )
     latency_ms = (time.perf_counter() - started) * 1000.0
-    text = (resp.choices[0].message.content or "").strip()
+    if not resp.choices:
+        raise RuntimeError(f"Empty choices from model {model.model_id}")
+    message = resp.choices[0].message
+    text = ((message.content if message else None) or "").strip()
     usage = resp.usage
+    completion_tokens = getattr(usage, "completion_tokens", None) if usage else None
+    # Some providers report usage but return empty content (e.g. hit max_tokens on reasoning).
+    if not text and (completion_tokens or 0) > 0:
+        raise RuntimeError(
+            f"Empty content from {model.model_id} "
+            f"(completion_tokens={completion_tokens}, max_tokens={model.max_tokens})"
+        )
     return CompletionResult(
         text=text,
         latency_ms=latency_ms,
         prompt_tokens=getattr(usage, "prompt_tokens", None) if usage else None,
-        completion_tokens=getattr(usage, "completion_tokens", None) if usage else None,
+        completion_tokens=completion_tokens,
     )

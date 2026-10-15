@@ -31,8 +31,13 @@ Question:
 JSON:"""
 
 JUDGE_TEMPLATE = """\
-You are an impartial judge. Compare the candidate answer to the reference.
-Return ONLY a number between {score_min} and {score_max}.
+You are an impartial expert judge. Compare the candidate answer to the reference.
+First write a short analysis (2–5 sentences): what is correct, what is missing or wrong.
+Then give a final numeric score between {score_min} and {score_max}.
+
+Return ONLY valid JSON with keys:
+- "analysis" (string) — your reasoning
+- "score" (number) — final score
 
 Question:
 {question}
@@ -44,7 +49,7 @@ Candidate answer:
 {candidate_answer}
 
 {rubric_block}
-Score only:"""
+JSON:"""
 
 
 def _rubric_block(row: DatasetRow) -> str:

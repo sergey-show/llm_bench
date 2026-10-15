@@ -17,7 +17,12 @@ from llm_bench.schemas import (
     RunRequest,
     ScorerKind,
 )
-from llm_bench.scorers import compute_row_metrics, extract_answer_and_score, extract_score
+from llm_bench.scorers import (
+    compute_row_metrics,
+    extract_answer_and_score,
+    extract_judge_verdict,
+    extract_score,
+)
 from llm_bench.settings import Settings, settings as default_settings
 from llm_bench.storage import save_run
 from llm_bench.traffic_light import classify_traffic_light, row_score_100
@@ -57,6 +62,8 @@ async def _predict_one(
                 pred_answer, pred_score = extract_answer_and_score(result.text)
 
             judge_score = None
+            judge_rationale = None
+            judge_raw = None
             if ScorerKind.llm_judge in scorers and judge_model and pred_answer:
                 judge_prompt = build_judge_prompt(
                     row,
@@ -65,7 +72,8 @@ async def _predict_one(
                     score_max=cfg.score_max,
                 )
                 judge_res = await chat_complete(judge_model, judge_prompt, cfg=cfg)
-                judge_score = extract_score(judge_res.text)
+                judge_raw = judge_res.text
+                judge_rationale, judge_score = extract_judge_verdict(judge_res.text)
 
             metrics = compute_row_metrics(
                 pred_score=pred_score,
@@ -81,6 +89,7 @@ async def _predict_one(
                 row_id=row.id,
                 model_id=model.id,
                 model_name=model.name,
+                question=row.question,
                 raw_output=result.text,
                 pred_answer=pred_answer,
                 pred_score=pred_score,
@@ -89,6 +98,9 @@ async def _predict_one(
                 metrics=metrics,
                 score_100=s100,
                 traffic_light=light.value,
+                judge_score=judge_score,
+                judge_rationale=judge_rationale,
+                judge_raw=judge_raw,
                 latency_ms=result.latency_ms,
                 prompt_tokens=result.prompt_tokens,
                 completion_tokens=result.completion_tokens,
@@ -100,6 +112,7 @@ async def _predict_one(
                 row_id=row.id,
                 model_id=model.id,
                 model_name=model.name,
+                question=row.question,
                 gold_score=row.gold_score,
                 reference_answer=row.reference_answer,
                 error=str(exc),

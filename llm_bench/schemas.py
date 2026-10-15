@@ -157,6 +157,7 @@ class RowPrediction(BaseModel):
     row_id: str
     model_id: str
     model_name: str
+    question: str | None = None
     raw_output: str = ""
     pred_answer: str | None = None
     pred_score: float | None = None
@@ -165,6 +166,9 @@ class RowPrediction(BaseModel):
     metrics: dict[str, float] = Field(default_factory=dict)
     score_100: float | None = None
     traffic_light: str | None = None
+    judge_score: float | None = None
+    judge_rationale: str | None = None
+    judge_raw: str | None = None
     latency_ms: float | None = None
     prompt_tokens: int | None = None
     completion_tokens: int | None = None

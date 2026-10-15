@@ -34,6 +34,37 @@ def extract_score(text: str) -> float | None:
     return float(matches[-1])
 
 
+def extract_judge_verdict(text: str) -> tuple[str | None, float | None]:
+    """Parse judge output into (analysis, score)."""
+    if not text:
+        return None, None
+    text = text.strip()
+    if "{" in text and "}" in text:
+        try:
+            start = text.find("{")
+            end = text.rfind("}") + 1
+            obj = json.loads(text[start:end])
+            if isinstance(obj, dict):
+                analysis = obj.get("analysis") or obj.get("rationale") or obj.get("reasoning")
+                score_raw = obj.get("score")
+                score = float(score_raw) if score_raw is not None else extract_score(text)
+                if analysis is not None:
+                    return str(analysis).strip(), score
+                return text, score
+        except Exception:
+            pass
+    score = extract_score(text)
+    # If model returned only a number, no separate analysis
+    if score is not None and text.replace(",", ".").strip() in {
+        str(score),
+        f"{score:g}",
+        f"{score:.1f}",
+        f"{score:.0f}",
+    }:
+        return None, score
+    return text, score
+
+
 def extract_answer_and_score(text: str) -> tuple[str | None, float | None]:
     if not text:
         return None, None
