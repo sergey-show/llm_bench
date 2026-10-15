@@ -118,6 +118,14 @@ def summarize_predictions(
         )
         light = classify_traffic_light(score_100, cfg)
 
+        total_tokens = prompt_tokens + completion_tokens
+        avg_prompt = (prompt_tokens / n_ok) if n_ok else None
+        avg_completion = (completion_tokens / n_ok) if n_ok else None
+        avg_total = (total_tokens / n_ok) if n_ok else None
+        score_per_1k = None
+        if score_100 is not None and total_tokens > 0:
+            score_per_1k = score_100 / (total_tokens / 1000.0)
+
         summaries.append(
             ModelSummary(
                 model_id=model_id,
@@ -139,6 +147,11 @@ def summarize_predictions(
                 error_rate=error_rate,
                 total_prompt_tokens=prompt_tokens,
                 total_completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                avg_prompt_tokens=avg_prompt,
+                avg_completion_tokens=avg_completion,
+                avg_total_tokens=avg_total,
+                score_per_1k_tokens=score_per_1k,
             )
         )
     return summaries
@@ -181,17 +194,28 @@ def summarize_by_tag(
             cfg=cfg,
         )
         light = classify_traffic_light(score_100, cfg)
+        prompt_tokens = sum(r.prompt_tokens or 0 for r in ok)
+        completion_tokens = sum(r.completion_tokens or 0 for r in ok)
+        total_tokens = prompt_tokens + completion_tokens
+        n_ok = len(ok)
+        avg_completion = (completion_tokens / n_ok) if n_ok else None
+        score_per_1k = None
+        if score_100 is not None and total_tokens > 0:
+            score_per_1k = score_100 / (total_tokens / 1000.0)
         out.append(
             TagBreakdown(
                 tag=tag,
                 model_id=model_id,
                 model_name=rows[0].model_name,
-                n=len(ok),
+                n=n_ok,
                 mae=mae,
                 token_f1=f1,
                 exact_match=exact,
                 score_100=score_100,
                 traffic_light=light.value,
+                total_tokens=total_tokens,
+                avg_completion_tokens=avg_completion,
+                score_per_1k_tokens=score_per_1k,
             )
         )
     return out

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -23,7 +23,7 @@
       color: var(--text);
       line-height: 1.45;
     }
-    main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
+    main { max-width: 1180px; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
     h1 { font-size: 1.75rem; margin: 0 0 .25rem; letter-spacing: -.02em; }
     h2 { font-size: 1.15rem; margin: 2rem 0 .75rem; }
     .meta { color: var(--muted); font-size: .95rem; }
@@ -43,10 +43,10 @@
       border: 1px solid var(--line);
       border-radius: 12px;
       overflow: hidden;
-      font-size: .92rem;
+      font-size: .88rem;
     }
-    th, td { padding: .65rem .75rem; border-bottom: 1px solid var(--line); text-align: left; }
-    th { color: var(--muted); font-weight: 600; background: #151c24; }
+    th, td { padding: .6rem .7rem; border-bottom: 1px solid var(--line); text-align: left; }
+    th { color: var(--muted); font-weight: 600; background: #151c24; white-space: nowrap; }
     tr:last-child td { border-bottom: none; }
     tr.best td { background: color-mix(in srgb, var(--ok) 12%, transparent); }
     .num { font-variant-numeric: tabular-nums; }
@@ -79,6 +79,7 @@
     .dot.yellow { background: var(--warn); }
     .dot.red { background: var(--bad); }
     .dot.unknown { background: var(--muted); }
+    .hint { color: var(--muted); font-size: .85rem; margin: -.25rem 0 .75rem; }
     footer { margin-top: 2rem; color: var(--muted); font-size: .85rem; }
   </style>
 </head>
@@ -92,17 +93,27 @@
     · mode <strong>{{ run.mode }}</strong>
   </p>
 
-  <h2>Светофор</h2>
+  <h2>Traffic light</h2>
   <div class="grid">
     {% if best %}
     <div class="card">
-      <div class="label">Лучшая модель</div>
+      <div class="label">Best score</div>
       <div class="value">{{ best.model_name }}</div>
       <div class="meta">
         <span class="tl {{ best.traffic_light or 'unknown' }}">
           <span class="dot {{ best.traffic_light or 'unknown' }}"></span>
           {{ '%.1f'|format(best.score_100) if best.score_100 is not none else '—' }} / 100
         </span>
+      </div>
+    </div>
+    {% endif %}
+    {% if best_efficiency %}
+    <div class="card">
+      <div class="label">Best efficiency</div>
+      <div class="value">{{ best_efficiency.model_name }}</div>
+      <div class="meta">
+        {{ '%.1f'|format(best_efficiency.score_per_1k_tokens) if best_efficiency.score_per_1k_tokens is not none else '—' }}
+        score / 1k tok
       </div>
     </div>
     {% endif %}
@@ -120,18 +131,66 @@
     </div>
   </div>
 
+  <h2>Quality vs tokens</h2>
+  <p class="hint">
+    Compare quality (<code>score_100</code>) against token spend.
+    <strong>Score / 1k tok</strong> = score_100 ÷ (total_tokens / 1000) — higher is more efficient.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>Score</th>
+        <th>Light</th>
+        <th>Prompt Σ</th>
+        <th>Completion Σ</th>
+        <th>Total Σ</th>
+        <th>Avg prompt</th>
+        <th>Avg completion</th>
+        <th>Avg total</th>
+        <th>Score / 1k tok ↑</th>
+        <th>Errors</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in run.summaries %}
+      <tr class="{{ 'best' if best_efficiency and s.model_id == best_efficiency.model_id else '' }}">
+        <td>{{ s.model_name }}</td>
+        <td class="num">{{ '%.1f'|format(s.score_100) if s.score_100 is not none else '—' }}</td>
+        <td>
+          <span class="tl {{ s.traffic_light or 'unknown' }}">
+            <span class="dot {{ s.traffic_light or 'unknown' }}"></span>
+            {{ s.traffic_light or 'n/a' }}
+          </span>
+        </td>
+        <td class="num">{{ s.total_prompt_tokens }}</td>
+        <td class="num">{{ s.total_completion_tokens }}</td>
+        <td class="num">{{ s.total_tokens }}</td>
+        <td class="num">{{ '%.1f'|format(s.avg_prompt_tokens) if s.avg_prompt_tokens is not none else '—' }}</td>
+        <td class="num">{{ '%.1f'|format(s.avg_completion_tokens) if s.avg_completion_tokens is not none else '—' }}</td>
+        <td class="num">{{ '%.1f'|format(s.avg_total_tokens) if s.avg_total_tokens is not none else '—' }}</td>
+        <td class="num">{{ '%.2f'|format(s.score_per_1k_tokens) if s.score_per_1k_tokens is not none else '—' }}</td>
+        <td class="num">{{ s.n_error }}/{{ s.n_total }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
   <h2>Model summaries</h2>
   <table>
     <thead>
       <tr>
-        <th>Светофор</th>
+        <th>Light</th>
         <th>Score</th>
         <th>Model</th>
         <th>MAE ↓</th>
         <th>RMSE ↓</th>
-        <th>Spearman</th>
         <th>Exact</th>
         <th>F1</th>
+        <th>Judge</th>
+        <th>Tokens Σ</th>
+        <th>Avg out</th>
+        <th>Score/1k</th>
         <th>p95 ms</th>
         <th>Errors</th>
       </tr>
@@ -149,9 +208,12 @@
         <td>{{ s.model_name }}</td>
         <td class="num">{{ '%.4f'|format(s.mae) if s.mae is not none else '—' }}</td>
         <td class="num">{{ '%.4f'|format(s.rmse) if s.rmse is not none else '—' }}</td>
-        <td class="num">{{ '%.3f'|format(s.spearman) if s.spearman is not none else '—' }}</td>
         <td class="num">{{ '%.3f'|format(s.exact_match) if s.exact_match is not none else '—' }}</td>
         <td class="num">{{ '%.3f'|format(s.token_f1) if s.token_f1 is not none else '—' }}</td>
+        <td class="num">{{ '%.3f'|format(s.llm_judge) if s.llm_judge is not none else '—' }}</td>
+        <td class="num">{{ s.total_tokens }}</td>
+        <td class="num">{{ '%.1f'|format(s.avg_completion_tokens) if s.avg_completion_tokens is not none else '—' }}</td>
+        <td class="num">{{ '%.2f'|format(s.score_per_1k_tokens) if s.score_per_1k_tokens is not none else '—' }}</td>
         <td class="num">{{ '%.0f'|format(s.latency_p95_ms) if s.latency_p95_ms is not none else '—' }}</td>
         <td class="num">{{ s.n_error }}/{{ s.n_total }}</td>
       </tr>
@@ -166,11 +228,14 @@
       <tr>
         <th>Tag</th>
         <th>Model</th>
-        <th>Светофор</th>
+        <th>Light</th>
         <th>Score</th>
         <th>n</th>
         <th>MAE ↓</th>
         <th>F1</th>
+        <th>Tokens Σ</th>
+        <th>Avg out</th>
+        <th>Score/1k</th>
       </tr>
     </thead>
     <tbody>
@@ -188,6 +253,9 @@
         <td class="num">{{ t.n }}</td>
         <td class="num">{{ '%.4f'|format(t.mae) if t.mae is not none else '—' }}</td>
         <td class="num">{{ '%.3f'|format(t.token_f1) if t.token_f1 is not none else '—' }}</td>
+        <td class="num">{{ t.total_tokens }}</td>
+        <td class="num">{{ '%.1f'|format(t.avg_completion_tokens) if t.avg_completion_tokens is not none else '—' }}</td>
+        <td class="num">{{ '%.2f'|format(t.score_per_1k_tokens) if t.score_per_1k_tokens is not none else '—' }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -198,13 +266,15 @@
   <table>
     <thead>
       <tr>
-        <th>Светофор</th>
+        <th>Light</th>
         <th>Score</th>
         <th>Model</th>
         <th>Row</th>
         <th>Gold</th>
         <th>Pred</th>
         <th>|err|</th>
+        <th>Prompt</th>
+        <th>Completion</th>
         <th>Error</th>
       </tr>
     </thead>
@@ -222,6 +292,8 @@
         <td class="num">{{ p.gold_score if p.gold_score is not none else '—' }}</td>
         <td class="num">{{ p.pred_score if p.pred_score is not none else '—' }}</td>
         <td class="num">{{ '%.3f'|format(p.metrics.abs_error) if p.metrics.get('abs_error') is not none else '—' }}</td>
+        <td class="num">{{ p.prompt_tokens if p.prompt_tokens is not none else '—' }}</td>
+        <td class="num">{{ p.completion_tokens if p.completion_tokens is not none else '—' }}</td>
         <td>{{ p.error or '—' }}</td>
       </tr>
       {% endfor %}
@@ -230,7 +302,7 @@
 
   <footer>
     Generated by llm-bench · scorers: {{ scorers }}
-    · светофор: green≥{{ thresholds.green }}, yellow≥{{ thresholds.yellow }}
+    · traffic light: green≥{{ thresholds.green }}, yellow≥{{ thresholds.yellow }}
   </footer>
 </main>
 </body>

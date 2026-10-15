@@ -68,3 +68,30 @@ def test_composite_error_penalty():
     penalized = composite_score_100(mae=0.0, error_rate=0.5, cfg=cfg)
     assert perfect == 100.0
     assert penalized == 50.0
+
+
+def test_token_efficiency_in_summary():
+    preds = [
+        RowPrediction(
+            row_id="1",
+            model_id="m1",
+            model_name="Verbose",
+            metrics={"token_f1": 1.0},
+            prompt_tokens=100,
+            completion_tokens=400,
+            weight=1.0,
+        ),
+        RowPrediction(
+            row_id="2",
+            model_id="m2",
+            model_name="Compact",
+            metrics={"token_f1": 1.0},
+            prompt_tokens=100,
+            completion_tokens=50,
+            weight=1.0,
+        ),
+    ]
+    summaries = {s.model_name: s for s in summarize_predictions(preds)}
+    assert summaries["Verbose"].total_tokens == 500
+    assert summaries["Compact"].total_tokens == 150
+    assert summaries["Compact"].score_per_1k_tokens > summaries["Verbose"].score_per_1k_tokens

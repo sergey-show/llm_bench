@@ -194,6 +194,12 @@ class ModelSummary(BaseModel):
     error_rate: float = 0.0
     total_prompt_tokens: int = 0
     total_completion_tokens: int = 0
+    total_tokens: int = 0
+    avg_prompt_tokens: float | None = None
+    avg_completion_tokens: float | None = None
+    avg_total_tokens: float | None = None
+    # Quality efficiency: score_100 points per 1k total tokens (higher = better)
+    score_per_1k_tokens: float | None = None
 
 
 class TagBreakdown(BaseModel):
@@ -206,6 +212,9 @@ class TagBreakdown(BaseModel):
     exact_match: float | None = None
     score_100: float | None = None
     traffic_light: str | None = None
+    total_tokens: int = 0
+    avg_completion_tokens: float | None = None
+    score_per_1k_tokens: float | None = None
 
 
 class JobStatus(str, Enum):

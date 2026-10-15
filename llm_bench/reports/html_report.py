@@ -21,11 +21,14 @@ def render_html_report(run: BenchRun, *, sample_limit: int = 40, cfg: Settings |
     best = next((s for s in run.summaries if s.score_100 is not None), None)
     if best is None:
         best = next((s for s in run.summaries if s.mae is not None), None)
+    with_eff = [s for s in run.summaries if s.score_per_1k_tokens is not None]
+    best_efficiency = max(with_eff, key=lambda s: s.score_per_1k_tokens or 0.0) if with_eff else None
     counts = Counter(s.traffic_light or "unknown" for s in run.summaries)
     sample = run.predictions[:sample_limit]
     return template.render(
         run=run,
         best=best,
+        best_efficiency=best_efficiency,
         sample=sample,
         scorers=", ".join(s.value for s in run.scorers),
         traffic_counts={

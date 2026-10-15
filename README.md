@@ -11,6 +11,7 @@ Compare OpenAI-compatible LLMs on a labeled dataset: `question → answer → sc
 - Metrics: MAE, RMSE, Spearman/Pearson, exact match, token F1, LLM-as-judge
 - **Traffic light on a 0–100 score** (🟢 ≥80 / 🟡 ≥60 / 🔴 &lt;60; thresholds configurable)
 - Per-tag MAE / score breakdown
+- **Token usage** in reports: prompt / completion / total, averages, and **score per 1k tokens**
 - HTML report + REST API
 
 ## Production (Docker)
